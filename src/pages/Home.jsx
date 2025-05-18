@@ -1,0 +1,63 @@
+import { useState } from "react";
+import CategoryCard from "../components/CategoryCard";
+
+const categories = [
+  {
+    title: "Dresses",
+    image: "https://i.pinimg.com/736x/05/68/35/0568354575c7b24d91baeb7930904328.jpg",
+  },
+  {
+    title: "Tops",
+    image: "https://i.pinimg.com/736x/1a/fc/a8/1afca82efc07593d9e9163599060c379.jpg",
+  },
+  {
+    title: "Shoes",
+    image: "https://i.pinimg.com/736x/50/13/ee/5013ee957824bae1236ee389f0847860.jpg",
+  },
+  {
+    title: "Bags",
+    image: "https://i.pinimg.com/736x/b6/a5/2d/b6a52d2dd63fcd52d4094d0c4a0027e4.jpg",
+  },
+  {
+    title: "Watches",
+    image: "https://i.pinimg.com/736x/cd/fa/6b/cdfa6b15d9ca911b3d07d6f7b884e3c1.jpg",
+  },
+  {
+    title: "TV",
+    image: "https://i.pinimg.com/736x/ab/a9/83/aba9833c7c6d68c9e67bde3b4157e3c3.jpg",
+  },
+];
+
+const Home = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCategories = categories.filter((cat) =>
+    cat.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="home">
+      <h1>Welcome to Shee’s Thrift Store</h1>
+
+      <input
+        type="text"
+        placeholder="Search for items..."
+        className="search-input"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      <div className="category-grid">
+        {filteredCategories.length > 0 ? (
+          filteredCategories.map((cat) => (
+            <CategoryCard key={cat.title} title={cat.title} image={cat.image} />
+          ))
+        ) : (
+          <p>No matching categories found.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Home;
