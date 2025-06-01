@@ -6,7 +6,10 @@ import Navbar from './components/Navbar'
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
+import ItemDetails from "./pages/ItemDetails";
 import AddItem from "./components/AddItem";
+import Checkout from "./pages/Checkout";
+
 
 function App()  {
   return (
@@ -19,6 +22,8 @@ function App()  {
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
         <Route path ="/add-item" element= {<AddItem/>}/>
+        <Route path="/item/:id" element={<ItemDetails />} />
+        <Route path="/checkout" element={<Checkout />} />
       </Routes>
     </BrowserRouter>
   );

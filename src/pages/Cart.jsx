@@ -1,9 +1,11 @@
-import { useCart } from "../context/CartContext";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext.jsx";
 
-function Cart() {
-  const { cart } = useCart();
+const Cart = () => {
+  const { cart, removeFromCart } = useCart();
+  const navigate = useNavigate();
 
-  // Calculate total price
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
@@ -13,20 +15,30 @@ function Cart() {
         <p>Your cart is empty.</p>
       ) : (
         <>
-          <ul>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {cart.map(item => (
-              <div key={item.id} style={{ marginBottom: '1rem' }}>
-                <p>{item.name} x {item.quantity}</p>
-                <p>Price per item: KSH{item.price}</p>
-                <p>Total: KSH{item.price * item.quantity}</p>
-              </div>
+              <li key={item.id} style={{
+                marginBottom: '1rem',
+                borderBottom: '1px solid #ccc',
+                paddingBottom: '1rem'
+              }}>
+                <p><strong>{item.name}</strong> x {item.quantity}</p>
+                {item.image && <img src={item.image} alt={item.name} width="100" />}
+                <p>Price per item: KSH {item.price}</p>
+                <p>Total: KSH {item.price * item.quantity}</p>
+                <button onClick={() => removeFromCart(item.id)}>Remove</button>
+              </li>
             ))}
           </ul>
-          <h3>Checkout Total: KSH{totalPrice}</h3>
+
+          <h3>Checkout Total: KSH {totalPrice}</h3>
+          <button onClick={() => navigate("/checkout")} style={{ marginTop: "1rem" }}>
+            Buy Now
+          </button>
         </>
       )}
     </div>
   );
-}
+};
 
 export default Cart;
