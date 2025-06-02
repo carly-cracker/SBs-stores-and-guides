@@ -8,6 +8,7 @@ function AddItem() {
     name: "",
     price: "",
     image: "",
+    description: "",
     category: ""
   });
 
@@ -59,6 +60,14 @@ function AddItem() {
           value={formData.image}
           onChange={handleChange}
           required
+        /><br />
+        <textarea
+          name="description"
+          placeholder="Item description"
+          value={formData.description}
+          onChange={handleChange}
+          required
+          rows={4}
         /><br />
         <input
           name="category"
