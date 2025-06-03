@@ -1,12 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
-import { Link } from "react-router-dom";
 
 const auth = getAuth();
 const db = getFirestore();
 
-const ADMIN_EMAIL = "ckorir765@gmail.com";
+const ADMIN_EMAIL = "ckorir765@gmail.com"; // Change as needed
 
 function Signup() {
   const [form, setForm] = useState({
@@ -16,30 +16,25 @@ function Signup() {
     email: "",
     password: "",
   });
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
-    setMessage("");
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
-    setMessage("");
-
-    // Basic validation
-    if (!/^\d{10,15}$/.test(form.phone)) {
-      setError("Please enter a valid phone number (10-15 digits).");
-      return;
-    }
     if (!form.firstName.trim() || !form.lastName.trim()) {
       setError("Please enter your first and last name.");
       return;
     }
-
+    if (!/^\d{10,15}$/.test(form.phone)) {
+      setError("Please enter a valid phone number (10-15 digits).");
+      return;
+    }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const user = userCredential.user;
@@ -51,14 +46,8 @@ function Signup() {
         email: user.email,
         role: role,
       });
-      setMessage("Signup successful! You can now log in.");
-      setForm({
-        firstName: "",
-        lastName: "",
-        phone: "",
-        email: "",
-        password: "",
-      });
+      // Redirect to home and pass firstName in state
+      navigate("/", { state: { welcomeName: form.firstName } });
     } catch (error) {
       setError(error.message.replace("Firebase:", "").trim());
     }
@@ -125,9 +114,8 @@ function Signup() {
 
         <button type="submit">Sign Up</button>
         {error && <div className="error-message">{error}</div>}
-        {message && <div className="success-message">{message}</div>}
         <div className="form-link">
-          Already have an account? <a href="/login">Login</a>
+          Already have an account? <Link to="/login">Login</Link>
         </div>
       </form>
     </div>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CategoryCard from "../components/CategoryCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const categories = [
   {
@@ -47,7 +47,19 @@ const categories = [
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [welcomeName, setWelcomeName] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Show welcome message if redirected from signup/login
+  useEffect(() => {
+    if (location.state && location.state.welcomeName) {
+      setWelcomeName(location.state.welcomeName);
+      // Clear the message after 4 seconds
+      const timer = setTimeout(() => setWelcomeName(""), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   const filteredCategories = categories.filter((cat) =>
     cat.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -59,6 +71,12 @@ const Home = () => {
 
   return (
     <div className="home">
+      {welcomeName && (
+        <div className="success-message" style={{ marginTop: "1rem" }}>
+          Welcome, {welcomeName}!
+        </div>
+      )}
+
       <h1>Welcome to SBs Store</h1>
 
       <input

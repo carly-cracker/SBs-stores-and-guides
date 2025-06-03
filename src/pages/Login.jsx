@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Link } from "react-router-dom";
 
 const auth = getAuth();
 const db = getFirestore();
@@ -10,26 +9,22 @@ const db = getFirestore();
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    setMessage("");
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
-        const role = userDoc.data().role;
+        const { role, firstName } = userDoc.data();
         if (role === "admin") {
-          setMessage("Logged in as admin!");
-          setTimeout(() => navigate("/add-item"), 1000);
+          navigate("/add-item", { state: { welcomeName: firstName } });
         } else {
-          setMessage("Logged in successfully!");
-          setTimeout(() => navigate("/"), 1000);
+          navigate("/", { state: { welcomeName: firstName } });
         }
       } else {
         setError("No user data found.");
@@ -65,9 +60,8 @@ function Login() {
 
         <button type="submit">Log In</button>
         {error && <div className="error-message">{error}</div>}
-        {message && <div className="success-message">{message}</div>}
         <div className="form-link">
-          Don't have an account? <a href="/signup">Sign Up</a>
+          Don't have an account? <Link to="/signup">Sign Up</Link>
         </div>
       </form>
     </div>
