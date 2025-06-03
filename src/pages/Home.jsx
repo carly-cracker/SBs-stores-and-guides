@@ -53,7 +53,7 @@ const Home = () => {
 
   return (
     <div className="home">
-      <h1>Welcome to Shee’s Thrift Store</h1>
+      <h1>Welcome to SBs Store</h1>
 
       <input
         type="text"
