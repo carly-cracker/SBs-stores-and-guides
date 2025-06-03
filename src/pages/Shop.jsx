@@ -123,7 +123,6 @@ function Shop() {
                 <img src={item.image} alt={item.name} />
                 <h4>{item.name}</h4>
                 <p>KSH {item.price}</p>
-                {item.description && <p style={{ fontSize: "0.95em", color: "#555" }}>{item.description}</p>}
                 <button
                   onClick={e => {
                     e.stopPropagation();
