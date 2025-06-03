@@ -39,7 +39,22 @@ function Shop() {
   // Get all categories
   const categories = Object.keys(groupedItems);
 
-  // Handle search submit
+  // Enhanced filter: filter items by name, price, description, or category
+  const filteredGroupedItems = {};
+  categories.forEach(category => {
+    const filtered = groupedItems[category].filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.price && item.price.toString().includes(searchTerm))
+    );
+    if (filtered.length > 0) {
+      filteredGroupedItems[category] = filtered;
+    }
+  });
+  const filteredCategories = Object.keys(filteredGroupedItems);
+
+  // Handle search submit (scroll to category if exact match)
   const handleSearch = (e) => {
     e.preventDefault();
     const search = searchTerm.trim().toLowerCase();
@@ -65,17 +80,21 @@ function Shop() {
       <form onSubmit={handleSearch} style={{ marginBottom: "1.5rem" }}>
         <input
           type="text"
-          placeholder="Search category..."
+          placeholder="Search by name, price, description, or category..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          style={{ padding: "0.5rem", width: "200px" }}
+          style={{ padding: "0.5rem", width: "300px" }}
         />
         <button type="submit" style={{ marginLeft: "0.5rem", padding: "0.5rem 1rem" }}>
           Go
         </button>
       </form>
 
-      {categories.map(category => (
+      {filteredCategories.length === 0 && (
+        <p>No items found matching your search.</p>
+      )}
+
+      {filteredCategories.map(category => (
         <div
           key={category}
           ref={el => (categoryRefs.current[category] = el)}
@@ -94,7 +113,7 @@ function Shop() {
             )}
           </h3>
           <div className="item-grid">
-            {groupedItems[category].map(item => (
+            {filteredGroupedItems[category].map(item => (
               <div
                 key={item.id}
                 className="item-card"
@@ -103,7 +122,8 @@ function Shop() {
               >
                 <img src={item.image} alt={item.name} />
                 <h4>{item.name}</h4>
-                <p>KSH{item.price}</p>
+                <p>KSH {item.price}</p>
+                {item.description && <p style={{ fontSize: "0.95em", color: "#555" }}>{item.description}</p>}
                 <button
                   onClick={e => {
                     e.stopPropagation();
