@@ -26,6 +26,22 @@ const categories = [
     title: "TV",
     image: "https://i.pinimg.com/736x/ab/a9/83/aba9833c7c6d68c9e67bde3b4157e3c3.jpg",
   },
+  {
+    title: "Breakfast set",
+    image: "https://res.cloudinary.com/dir0qfbpu/image/upload/v1748852481/f82a17a4-7fa9-4ab5-b34f-3d5af93eaa9f_auv9gx.jpg",
+  },
+  {
+    title: "Carpets",
+    image: "https://res.cloudinary.com/dir0qfbpu/image/upload/v1748873593/b6c11c2e-843e-483b-a176-6d34901171b6_eqhcgn.jpg",
+  },
+  {
+    title: "Cookware",
+    image: "https://res.cloudinary.com/dir0qfbpu/image/upload/v1748843720/WhatsApp_Image_2025-06-01_at_9.05.08_PM_irwad4.jpg",
+  },
+  {
+    title: "Pillow",
+    image: "https://res.cloudinary.com/dir0qfbpu/image/upload/v1748872041/c8d84583-e922-44b0-bfbc-5d2b96d92df4_ga8mty.jpg",
+  },
 ];
 
 const Home = () => {
