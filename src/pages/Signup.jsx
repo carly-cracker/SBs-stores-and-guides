@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { Link } from "react-router-dom";
 
 const auth = getAuth();
 const db = getFirestore();

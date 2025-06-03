@@ -4,29 +4,15 @@ import { useCart } from '../context/CartContext';
 function Navbar() {
   const { totalItems } = useCart();
   return (
-    <nav style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem" }}>
+    <nav className="navbar">
       <Link to="/">Home</Link>
       <Link to="/shop">Shop</Link>
-      <div style={{ position: "relative", display: "inline-block" }}>
+      <div className="cart-link">
         <Link to="/cart" style={{ fontSize: "1.5rem" }}>
           🛒
         </Link>
         {totalItems > 0 && (
-          <span
-            style={{
-              position: "absolute",
-              top: "-8px",
-              right: "-8px",
-              background: "red",
-              color: "white",
-              borderRadius: "50%",
-              padding: "2px 6px",
-              fontSize: "0.75rem",
-              minWidth: "20px",
-              textAlign: "center",
-              fontWeight: "bold"
-            }}
-          >
+          <span className="cart-badge">
             {totalItems}
           </span>
         )}
