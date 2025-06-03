@@ -57,6 +57,7 @@ nav a:hover {
   padding: 0.3rem 0.7rem;
   border-radius: 4px;
   transition: background 0.2s;
+
 }
 
 .navbar a:hover {
@@ -85,9 +86,10 @@ nav a:hover {
 @media (max-width: 600px) {
   .navbar {
     flex-wrap: wrap;
-    flex-direction: column;
     align-items: stretch;
     padding: 0.7rem 0.5rem;
+    display: flex; 
+    flex-direction: row;
     gap: 0.5rem;
   }
   .navbar a {
