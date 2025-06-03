@@ -13,7 +13,7 @@ import Checkout from "./pages/Checkout";
 
 function App()  {
   return (
-    <BrowserRouter>
+    <>
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -25,7 +25,7 @@ function App()  {
         <Route path="/item/:id" element={<ItemDetails />} />
         <Route path="/checkout" element={<Checkout />} />
       </Routes>
-    </BrowserRouter>
+    </>
   );
 }
 

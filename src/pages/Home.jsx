@@ -1,5 +1,6 @@
 import { useState } from "react";
 import CategoryCard from "../components/CategoryCard";
+import { useNavigate } from "react-router-dom";
 
 const categories = [
   {
@@ -46,10 +47,15 @@ const categories = [
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const filteredCategories = categories.filter((cat) =>
     cat.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleViewMore = (category) => {
+    navigate(`/shop?category=${encodeURIComponent(category)}`);
+  };
 
   return (
     <div className="home">
@@ -66,7 +72,12 @@ const Home = () => {
       <div className="category-grid">
         {filteredCategories.length > 0 ? (
           filteredCategories.map((cat) => (
-            <CategoryCard key={cat.title} title={cat.title} image={cat.image} />
+            <CategoryCard
+              key={cat.title}
+              title={cat.title}
+              image={cat.image}
+              onViewMore={() => handleViewMore(cat.title)}
+            />
           ))
         ) : (
           <p>No matching categories found.</p>
