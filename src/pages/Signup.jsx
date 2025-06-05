@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 
@@ -18,6 +18,10 @@ function Signup() {
   });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the return URL from location state if it exists
+  const returnTo = location.state?.returnTo || "/";
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -39,15 +43,26 @@ function Signup() {
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const user = userCredential.user;
       const role = form.email === ADMIN_EMAIL ? "admin" : "user";
+      
+      // Store user data in Firestore
       await setDoc(doc(db, "users", user.uid), {
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone,
         email: user.email,
         role: role,
+        createdAt: new Date(),
       });
-      // Redirect to home and pass firstName in state
-      navigate("/", { state: { welcomeName: form.firstName } });
+      
+      // Check if there's a pending order in localStorage
+      const pendingOrder = localStorage.getItem('pendingOrder');
+      if (pendingOrder && returnTo === '/checkout') {
+        // Navigate back to checkout
+        navigate(returnTo);
+      } else {
+        // Regular navigation to home
+        navigate("/", { state: { welcomeName: form.firstName } });
+      }
     } catch (error) {
       setError(error.message.replace("Firebase:", "").trim());
     }
@@ -56,6 +71,11 @@ function Signup() {
   return (
     <div className="auth-form-container">
       <h2>Sign Up</h2>
+      {returnTo === '/checkout' && (
+        <div className="auth-message">
+          <p>Create an account to complete your order</p>
+        </div>
+      )}
       <form className="auth-form" onSubmit={handleSignup} autoComplete="off">
         <label htmlFor="firstName">First Name</label>
         <input

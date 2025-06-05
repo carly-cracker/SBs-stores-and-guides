@@ -1,33 +1,32 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-
-const auth = getAuth();
-const db = getFirestore();
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the return URL from location state if it exists
+  const returnTo = location.state?.returnTo || "/";
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const { role, firstName } = userDoc.data();
-        if (role === "admin") {
-          navigate("/add-item", { state: { welcomeName: firstName } });
-        } else {
-          navigate("/", { state: { welcomeName: firstName } });
-        }
+      const auth = getAuth();
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if there's a pending order in localStorage
+      const pendingOrder = localStorage.getItem('pendingOrder');
+      if (pendingOrder && returnTo === '/checkout') {
+        // Navigate back to checkout
+        navigate(returnTo);
       } else {
-        setError("No user data found.");
+        // Regular navigation to home
+        navigate("/");
       }
     } catch (error) {
       setError(error.message.replace("Firebase:", "").trim());
@@ -37,28 +36,31 @@ function Login() {
   return (
     <div className="auth-form-container">
       <h2>Login</h2>
-      <form className="auth-form" onSubmit={handleLogin} autoComplete="off">
+      {returnTo === '/checkout' && (
+        <div className="auth-message">
+          <p>Login to complete your order</p>
+        </div>
+      )}
+      <form className="auth-form" onSubmit={handleLogin}>
         <label htmlFor="email">Email</label>
         <input
           id="email"
           type="email"
           placeholder="Email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
-
         <label htmlFor="password">Password</label>
         <input
           id="password"
           type="password"
           placeholder="Password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
-
-        <button type="submit">Log In</button>
+        <button type="submit">Login</button>
         {error && <div className="error-message">{error}</div>}
         <div className="form-link">
           Don't have an account? <Link to="/signup">Sign Up</Link>
