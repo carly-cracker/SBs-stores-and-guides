@@ -9,6 +9,7 @@ import Cart from "./pages/Cart";
 import ItemDetails from "./pages/ItemDetails";
 import AddItem from "./pages/AddItem";
 import Checkout from "./pages/Checkout";
+import MyAccount from './pages/MyAccount.jsx';
 
 
 function App()  {
@@ -24,6 +25,7 @@ function App()  {
         <Route path="/add-item" element={<AddItem />} />
         <Route path="/item/:id" element={<ItemDetails />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/my-account" element={<MyAccount />} />
       </Routes>
     </>
   );
