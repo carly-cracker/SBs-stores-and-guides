@@ -1,11 +1,42 @@
-import React from "react";
+import React, {useState,useEffect}from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { getAuth } from "firebase/auth";
+import { getFirestore,doc, getDoc  } from "firebase/firestore";
 
 const Checkout = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { cart } = useCart();
+  const [userData, setUserData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  const auth = getAuth()
+  const db = getFirestore()
+
+  useEffect(()=>{
+    const fetchUserData = async () =>{
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const userDoc =  await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()){
+            setUserData(userDoc.data())
+          }
+        }
+      }catch (error){
+        console.error("Error finding user data:", error)
+      }finally {setLoading(false)}
+    }
+    fetchUserData()
+  },[])
+
+  const getUserGreeting = () =>{
+    if (userData && userData.firstName){
+      return `Hello, my name is ${userData.firstName}. I would like to order:`
+    }
+    return "Hello, I would like to order:"
+  }
 
   // Case 1: Single item passed via navigate state
   if (state?.item) {
@@ -15,7 +46,8 @@ const Checkout = () => {
     const handleOrderNow = () => {
       const confirm = window.confirm("Are you sure you want to place this order?");
       if (confirm) {
-        const message = `Hello, I would like to order:\n\n🛍 *${item.name}*\n📦 Quantity: ${quantity}\n💰 Total: KSh ${total}\n\nPlease confirm availability.`;
+        const greeting = getUserGreeting()
+        const message = `${greeting}\n\n🛍 *${item.name}*\n📦 Quantity: ${quantity}\n💰 Total: KSh ${total}\n\nPlease confirm availability.`;
         const phone = "254799202039";
         const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
         window.open(url, "_blank");
@@ -30,7 +62,12 @@ const Checkout = () => {
           <h3>{item.name}</h3>
           <p>Quantity: {quantity}</p>
           <p>Total: KSh {total}</p>
-          <button onClick={handleOrderNow}>Order Now via WhatsApp</button>
+          <button 
+            onClick={handleOrderNow}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Order Now via WhatsApp"}
+          </button>
           <button onClick={() => navigate(-1)}>Cancel</button>
         </div>
       </div>
@@ -43,9 +80,9 @@ const Checkout = () => {
   const handleCartOrder = () => {
     const confirm = window.confirm("Place your full cart order?");
     if (confirm) {
-      const message = `🛍 Hello, I would like to order:\n\n${cart
+      const message = `${greeting}\n\n${cart
         .map(item => `• ${item.name} x ${item.quantity} = KSh ${item.price * item.quantity}`)
-        .join("\n")}\n\n💰 *Total: KSh ${totalPrice}*\n\nPlease confirm availability.`;
+        .join("\n")}\n\n💰 *Total: KSh ${totalPrice}*\n\nPlease confirm availability.`
 
       const phone = "254799202039";
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -68,7 +105,12 @@ const Checkout = () => {
         ))}
       </ul>
       <h3>Total: KSh {totalPrice}</h3>
-      <button onClick={handleCartOrder}>Order Now via WhatsApp</button>
+      <button 
+        onClick={handleCartOrder}
+        disabled={loading}
+      >
+        {loading ? "Loading..." : "Order Now via WhatsApp"}
+      </button>
       <button onClick={() => navigate(-1)} style={{ marginLeft: "1rem" }}>Cancel</button>
     </div>
   );
