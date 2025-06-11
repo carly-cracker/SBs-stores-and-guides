@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { db } from "../firebase/config";
 import { collection, getDocs } from "firebase/firestore";
 import { useCart } from "../context/CartContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Shop() {
   const [items, setItems] = useState([]);
@@ -10,6 +10,7 @@ function Shop() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Refs for each category section
   const categoryRefs = useRef({});
@@ -28,6 +29,18 @@ function Shop() {
     fetchItems();
   }, []);
 
+  // Read category from query string and set selectedCategory
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const cat = params.get("category");
+    if (cat) {
+      setSelectedCategory(cat);
+      setSearchTerm(""); // clear search if navigating by category
+    }
+  }, [location.search]);
+
+  // --- (move this useEffect after filteredCategories is defined) ---
+
   // Group items by category
   const groupedItems = items.reduce((groups, item) => {
     const category = item.category || "Uncategorized";
@@ -41,18 +54,34 @@ function Shop() {
 
   // Enhanced filter: filter items by name, price, description, or category
   const filteredGroupedItems = {};
-  categories.forEach(category => {
-    const filtered = groupedItems[category].filter(item =>
+  let filteredCategories = [];
+
+  if (selectedCategory && groupedItems[selectedCategory]) {
+    // Only show the selected category
+    const filtered = groupedItems[selectedCategory].filter(item =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.price && item.price.toString().includes(searchTerm))
     );
     if (filtered.length > 0) {
-      filteredGroupedItems[category] = filtered;
+      filteredGroupedItems[selectedCategory] = filtered;
+      filteredCategories = [selectedCategory];
     }
-  });
-  const filteredCategories = Object.keys(filteredGroupedItems);
+  } else {
+    categories.forEach(category => {
+      const filtered = groupedItems[category].filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.price && item.price.toString().includes(searchTerm))
+      );
+      if (filtered.length > 0) {
+        filteredGroupedItems[category] = filtered;
+      }
+    });
+    filteredCategories = Object.keys(filteredGroupedItems);
+  }
 
   // Handle search submit (scroll to category if exact match)
   const handleSearch = (e) => {
@@ -71,6 +100,20 @@ function Shop() {
       setSelectedCategory(""); // No match
     }
   };
+
+  // Scroll to the selected category section when selectedCategory and filteredCategories change
+  useEffect(() => {
+    if (
+      selectedCategory &&
+      filteredCategories.includes(selectedCategory) &&
+      categoryRefs.current[selectedCategory]
+    ) {
+      // Defer scroll to after DOM update
+      setTimeout(() => {
+        categoryRefs.current[selectedCategory].scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
+  }, [selectedCategory, filteredCategories]);
 
   return (
     <div style={{ padding: "2rem" }}>

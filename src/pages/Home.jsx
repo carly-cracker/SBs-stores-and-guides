@@ -72,8 +72,7 @@ const Home = () => {
 
   // Add this function to handle category selection from the CategoryBar
   const handleCategorySelect = (category) => {
-    console.log('Selected category:', category);
-    // You can implement filtering or navigation here if needed
+    navigate(`/shop?category=${encodeURIComponent(category)}`);
   };
 
   return (
