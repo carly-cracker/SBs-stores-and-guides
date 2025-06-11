@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import CategoryCard from "../components/CategoryCard";
 import { useNavigate, useLocation } from "react-router-dom";
+import CategoryBar from '../components/CategoryBar'
 
 const categories = [
   {
@@ -69,6 +70,12 @@ const Home = () => {
     navigate(`/shop?category=${encodeURIComponent(category)}`);
   };
 
+  // Add this function to handle category selection from the CategoryBar
+  const handleCategorySelect = (category) => {
+    console.log('Selected category:', category);
+    // You can implement filtering or navigation here if needed
+  };
+
   return (
     <div className="home">
       {welcomeName && (
@@ -78,6 +85,7 @@ const Home = () => {
       )}
 
       <h1>Welcome to SBs Store</h1>
+      <CategoryBar onSelectCategory={handleCategorySelect} />
 
       <input
         type="text"

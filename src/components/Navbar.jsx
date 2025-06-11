@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
   const { totalItems } = useCart();
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -36,6 +36,9 @@ function Navbar() {
       <div className="navbar-left">
         <Link to="/">Home</Link>
         <Link to="/shop">Shop</Link>
+        {isAdmin && (
+          <Link to="/add-item">Add Items</Link>
+        )}
         <div className="cart-link">
           <Link to="/cart" style={{ fontSize: "1.5rem" }}>🛒</Link>
           {totalItems > 0 && (

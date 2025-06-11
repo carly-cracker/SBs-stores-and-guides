@@ -597,3 +597,23 @@ button:disabled {
   align-items: center;
   gap: 1rem;
 }
+.category-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem 0;
+  scrollbar-width: thin;
+}
+.category-btn {
+  flex: 0 0 auto;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  background: #883e3e;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+.category-btn:hover {
+  background: #ccc;
+}

@@ -18,8 +18,10 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
+  const isAdmin = currentUser && currentUser.email === "carlkorir226@gmail.com";
+
   return (
-    <AuthContext.Provider value={{ currentUser }}>
+    <AuthContext.Provider value={{ currentUser, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
