@@ -3,12 +3,14 @@ import { db } from "../firebase/config";
 import { collection, getDocs } from "firebase/firestore";
 import { useCart } from "../context/CartContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
 
 function Shop() {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Manage sidebar state
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,12 +19,20 @@ function Shop() {
   const categoryRefs = useRef({});
   const subcategoryRefs = useRef({});
 
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const itemsCol = collection(db, "items");
         const itemSnapshot = await getDocs(itemsCol);
-        const itemList = itemSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const itemList = itemSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setItems(itemList);
       } catch (error) {
         console.error("Error fetching items:", error);
@@ -73,13 +83,17 @@ function Shop() {
     filteredGroupedItems[selectedCategory] = {};
 
     const subcategories = Object.keys(groupedItems[selectedCategory]);
-    subcategories.forEach(subcategory => {
-      const filtered = groupedItems[selectedCategory][subcategory].filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.price && item.price.toString().includes(searchTerm))
+    subcategories.forEach((subcategory) => {
+      const filtered = groupedItems[selectedCategory][subcategory].filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (item.description &&
+            item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (item.category &&
+            item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (item.subcategory &&
+            item.subcategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (item.price && item.price.toString().includes(searchTerm))
       );
       if (filtered.length > 0 && (!selectedSubcategory || selectedSubcategory === subcategory)) {
         filteredGroupedItems[selectedCategory][subcategory] = filtered;
@@ -93,15 +107,19 @@ function Shop() {
     }
   } else {
     // Filter across all categories and subcategories
-    categories.forEach(category => {
+    categories.forEach((category) => {
       const subcategories = Object.keys(groupedItems[category]);
-      subcategories.forEach(subcategory => {
-        const filtered = groupedItems[category][subcategory].filter(item =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (item.price && item.price.toString().includes(searchTerm))
+      subcategories.forEach((subcategory) => {
+        const filtered = groupedItems[category][subcategory].filter(
+          (item) =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.description &&
+              item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.category &&
+              item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.subcategory &&
+              item.subcategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.price && item.price.toString().includes(searchTerm))
         );
         if (filtered.length > 0) {
           if (!filteredGroupedItems[category]) {
@@ -130,7 +148,7 @@ function Shop() {
         break;
       }
       const subcategories = Object.keys(groupedItems[category]);
-      const foundSubcategory = subcategories.find(subcat =>
+      const foundSubcategory = subcategories.find((subcat) =>
         subcat.toLowerCase().includes(search)
       );
       if (foundSubcategory) {
@@ -140,8 +158,13 @@ function Shop() {
       }
     }
 
-    if (matchedSubcategory && subcategoryRefs.current[`${matchedCategory}-${matchedSubcategory}`]) {
-      subcategoryRefs.current[`${matchedCategory}-${matchedSubcategory}`].scrollIntoView({ behavior: "smooth" });
+    if (
+      matchedSubcategory &&
+      subcategoryRefs.current[`${matchedCategory}-${matchedSubcategory}`]
+    ) {
+      subcategoryRefs.current[`${matchedCategory}-${matchedSubcategory}`].scrollIntoView({
+        behavior: "smooth",
+      });
       setSelectedCategory(matchedCategory);
       setSelectedSubcategory(matchedSubcategory);
     } else if (matchedCategory && categoryRefs.current[matchedCategory]) {
@@ -167,7 +190,9 @@ function Shop() {
           filteredGroupedItems[selectedCategory]?.[selectedSubcategory] &&
           subcategoryRefs.current[`${selectedCategory}-${selectedSubcategory}`]
         ) {
-          subcategoryRefs.current[`${selectedCategory}-${selectedSubcategory}`].scrollIntoView({ behavior: "smooth" });
+          subcategoryRefs.current[`${selectedCategory}-${selectedSubcategory}`].scrollIntoView({
+            behavior: "smooth",
+          });
         } else {
           categoryRefs.current[selectedCategory].scrollIntoView({ behavior: "smooth" });
         }
@@ -176,88 +201,119 @@ function Shop() {
   }, [selectedCategory, selectedSubcategory, filteredCategories]);
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>Shop Our Collection</h2>
+    <div style={{ display: "flex" }}>
+      <Sidebar
+        categories={categories}
+        groupedItems={groupedItems}
+        categoryRefs={categoryRefs}
+        subcategoryRefs={subcategoryRefs}
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+      />
+      <div
+        style={{
+          marginLeft: isSidebarOpen ? "160px" : "30px", // Dynamic margin
+          padding: "2rem",
+          width: "100%",
+          transition: "margin-left 0.3s",
+        }}
+      >
+        <h2>Shop Our Collection</h2>
 
-      {/* Search Filter */}
-      <form onSubmit={handleSearch} style={{ marginBottom: "1.5rem" }}>
-        <input
-          type="text"
-          placeholder="Search by name, price, description, category, or subcategory..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{ padding: "0.5rem", width: "300px" }}
-        />
-        <button type="submit" style={{ marginLeft: "0.5rem", padding: "0.5rem 1rem" }}>
-          Go
-        </button>
-      </form>
+        {/* Search Filter */}
+        <form onSubmit={handleSearch} style={{ marginBottom: "1.5rem" }}>
+          <input
+            type="text"
+            placeholder="Search by name, price, description, category, or subcategory..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ padding: "0.5rem", width: "300px" }}
+          />
+          <button
+            type="submit"
+            style={{ marginLeft: "0.5rem", padding: "0.5rem 1rem" }}
+          >
+            Go
+          </button>
+        </form>
 
-      {filteredCategories.length === 0 && (
-        <p>No items found matching your search.</p>
-      )}
+        {filteredCategories.length === 0 && (
+          <p>No items found matching your search.</p>
+        )}
 
-      {filteredCategories.map(category => (
-        <div
-          key={category}
-          ref={el => (categoryRefs.current[category] = el)}
-          id={category.toLowerCase().replace(/\s+/g, "-")}
-          style={{
-            marginTop: "2rem",
-            border: selectedCategory === category ? "2px solid #007bff" : "none",
-            borderRadius: "8px",
-            padding: selectedCategory === category ? "1rem" : "0",
-          }}
-        >
-          <h3 style={{ textTransform: "capitalize" }}>
-            {category}
-            {selectedCategory === category && (
-              <span style={{ color: "#007bff", marginLeft: "0.5rem" }}>(Selected)</span>
-            )}
-          </h3>
-          {Object.keys(filteredGroupedItems[category]).map(subcategory => (
-            <div
-              key={`${category}-${subcategory}`}
-              ref={el => (subcategoryRefs.current[`${category}-${subcategory}`] = el)}
-              id={`${category.toLowerCase().replace(/\s+/g, "-")}-${subcategory.toLowerCase().replace(/\s+/g, "-")}`}
-              style={{
-                marginTop: "1rem",
-                paddingLeft: "1rem",
-                borderLeft: selectedSubcategory === subcategory ? "4px solid #007bff" : "none",
-              }}
-            >
-              <h4 style={{ textTransform: "capitalize", marginBottom: "0.5rem" }}>
-                {subcategory}
-                {selectedSubcategory === subcategory && (
-                  <span style={{ color: "#007bff", marginLeft: "0.5rem" }}>(Selected)</span>
-                )}
-              </h4>
-              <div className="item-grid">
-                {filteredGroupedItems[category][subcategory].map(item => (
-                  <div
-                    key={item.id}
-                    className="item-card"
-                    onClick={() => navigate(`/item/${item.id}`)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <img src={item.image} alt={item.name} />
-                    <h4>{item.name}</h4>
-                    <p>KSH {item.price}</p>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        addToCart(item);
-                      }}
+        {filteredCategories.map((category) => (
+          <div
+            key={category}
+            ref={(el) => (categoryRefs.current[category] = el)}
+            id={category.toLowerCase().replace(/\s+/g, "-")}
+            style={{
+              marginTop: "2rem",
+              border: selectedCategory === category ? "2px solid #007bff" : "none",
+              borderRadius: "8px",
+              padding: selectedCategory === category ? "1rem" : "0",
+            }}
+          >
+            <h3 style={{ textTransform: "capitalize" }}>
+              {category}
+              {selectedCategory === category && (
+                <span style={{ color: "#007bff", marginLeft: "0.5rem" }}>
+                  (Selected)
+                </span>
+              )}
+            </h3>
+            {Object.keys(filteredGroupedItems[category]).map((subcategory) => (
+              <div
+                key={`${category}-${subcategory}`}
+                ref={(el) =>
+                  (subcategoryRefs.current[`${category}-${subcategory}`] = el)
+                }
+                id={`${category.toLowerCase().replace(/\s+/g, "-")}-${subcategory
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
+                style={{
+                  marginTop: "1rem",
+                  paddingLeft: "1rem",
+                  borderLeft:
+                    selectedSubcategory === subcategory
+                      ? "4px solid #007bff"
+                      : "none",
+                }}
+              >
+                <h4 style={{ textTransform: "capitalize", marginBottom: "0.5rem" }}>
+                  {subcategory}
+                  {selectedSubcategory === subcategory && (
+                    <span style={{ color: "#007bff", marginLeft: "0.5rem" }}>
+                      (Selected)
+                    </span>
+                  )}
+                </h4>
+                <div className="item-grid">
+                  {filteredGroupedItems[category][subcategory].map((item) => (
+                    <div
+                      key={item.id}
+                      className="item-card"
+                      onClick={() => navigate(`/item/${item.id}`)}
+                      style={{ cursor: "pointer" }}
                     >
-                      Add to Cart
-                    </button>
-                  </div>
-                ))}
+                      <img src={item.image} alt={item.name} />
+                      <h4>{item.name}</h4>
+                      <p>KSH {item.price}</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(item);
+                        }}
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ))}
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
