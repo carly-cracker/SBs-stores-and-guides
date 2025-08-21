@@ -8,12 +8,14 @@ function Shop() {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Refs for each category section
+  // Refs for each category and subcategory section
   const categoryRefs = useRef({});
+  const subcategoryRefs = useRef({});
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -29,91 +31,149 @@ function Shop() {
     fetchItems();
   }, []);
 
-  // Read category from query string and set selectedCategory
+  // Read category and subcategory from query string
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get("category");
+    const subcat = params.get("subcategory");
     if (cat) {
       setSelectedCategory(cat);
-      setSearchTerm(""); // clear search if navigating by category
+      setSelectedSubcategory(subcat || "");
+      setSearchTerm(""); // Clear search if navigating by category/subcategory
+    } else {
+      setSelectedCategory("");
+      setSelectedSubcategory("");
     }
   }, [location.search]);
 
-  // --- (move this useEffect after filteredCategories is defined) ---
-
-  // Group items by category
+  // Group items by category and subcategory
   const groupedItems = items.reduce((groups, item) => {
     const category = item.category || "Uncategorized";
-    if (!groups[category]) groups[category] = [];
-    groups[category].push(item);
+    const subcategory = item.subcategory || "General";
+    if (!groups[category]) {
+      groups[category] = {};
+    }
+    if (!groups[category][subcategory]) {
+      groups[category][subcategory] = [];
+    }
+    groups[category][subcategory].push(item);
     return groups;
   }, {});
 
   // Get all categories
   const categories = Object.keys(groupedItems);
 
-  // Enhanced filter: filter items by name, price, description, or category
+  // Enhanced filter: filter items by name, price, description, category, or subcategory
   const filteredGroupedItems = {};
   let filteredCategories = [];
 
   if (selectedCategory && groupedItems[selectedCategory]) {
-    // Only show the selected category
-    const filtered = groupedItems[selectedCategory].filter(item =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.price && item.price.toString().includes(searchTerm))
-    );
-    if (filtered.length > 0) {
-      filteredGroupedItems[selectedCategory] = filtered;
-      filteredCategories = [selectedCategory];
-    }
-  } else {
-    categories.forEach(category => {
-      const filtered = groupedItems[category].filter(item =>
+    // Filter by selected category and optionally subcategory
+    filteredCategories = [selectedCategory];
+    filteredGroupedItems[selectedCategory] = {};
+
+    const subcategories = Object.keys(groupedItems[selectedCategory]);
+    subcategories.forEach(subcategory => {
+      const filtered = groupedItems[selectedCategory][subcategory].filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.price && item.price.toString().includes(searchTerm))
       );
-      if (filtered.length > 0) {
-        filteredGroupedItems[category] = filtered;
+      if (filtered.length > 0 && (!selectedSubcategory || selectedSubcategory === subcategory)) {
+        filteredGroupedItems[selectedCategory][subcategory] = filtered;
       }
+    });
+
+    // If no subcategories match, clear filtered items for this category
+    if (Object.keys(filteredGroupedItems[selectedCategory]).length === 0) {
+      delete filteredGroupedItems[selectedCategory];
+      filteredCategories = [];
+    }
+  } else {
+    // Filter across all categories and subcategories
+    categories.forEach(category => {
+      const subcategories = Object.keys(groupedItems[category]);
+      subcategories.forEach(subcategory => {
+        const filtered = groupedItems[category][subcategory].filter(item =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (item.subcategory && item.subcategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (item.price && item.price.toString().includes(searchTerm))
+        );
+        if (filtered.length > 0) {
+          if (!filteredGroupedItems[category]) {
+            filteredGroupedItems[category] = {};
+          }
+          filteredGroupedItems[category][subcategory] = filtered;
+        }
+      });
     });
     filteredCategories = Object.keys(filteredGroupedItems);
   }
 
-  // Handle search submit (scroll to category if exact match)
+  // Handle search submit (scroll to category or subcategory if exact match)
   const handleSearch = (e) => {
     e.preventDefault();
     const search = searchTerm.trim().toLowerCase();
     if (!search) return;
 
-    // Find matching category (case-insensitive)
-    const matchedCategory = categories.find(
-      cat => cat.toLowerCase().includes(search)
-    );
-    if (matchedCategory && categoryRefs.current[matchedCategory]) {
+    // Find matching category or subcategory
+    let matchedCategory = null;
+    let matchedSubcategory = null;
+
+    for (const category of categories) {
+      if (category.toLowerCase().includes(search)) {
+        matchedCategory = category;
+        break;
+      }
+      const subcategories = Object.keys(groupedItems[category]);
+      const foundSubcategory = subcategories.find(subcat =>
+        subcat.toLowerCase().includes(search)
+      );
+      if (foundSubcategory) {
+        matchedCategory = category;
+        matchedSubcategory = foundSubcategory;
+        break;
+      }
+    }
+
+    if (matchedSubcategory && subcategoryRefs.current[`${matchedCategory}-${matchedSubcategory}`]) {
+      subcategoryRefs.current[`${matchedCategory}-${matchedSubcategory}`].scrollIntoView({ behavior: "smooth" });
+      setSelectedCategory(matchedCategory);
+      setSelectedSubcategory(matchedSubcategory);
+    } else if (matchedCategory && categoryRefs.current[matchedCategory]) {
       categoryRefs.current[matchedCategory].scrollIntoView({ behavior: "smooth" });
       setSelectedCategory(matchedCategory);
+      setSelectedSubcategory("");
     } else {
-      setSelectedCategory(""); // No match
+      setSelectedCategory("");
+      setSelectedSubcategory("");
     }
   };
 
-  // Scroll to the selected category section when selectedCategory and filteredCategories change
+  // Scroll to the selected category or subcategory section
   useEffect(() => {
     if (
       selectedCategory &&
       filteredCategories.includes(selectedCategory) &&
       categoryRefs.current[selectedCategory]
     ) {
-      // Defer scroll to after DOM update
       setTimeout(() => {
-        categoryRefs.current[selectedCategory].scrollIntoView({ behavior: "smooth" });
+        if (
+          selectedSubcategory &&
+          filteredGroupedItems[selectedCategory]?.[selectedSubcategory] &&
+          subcategoryRefs.current[`${selectedCategory}-${selectedSubcategory}`]
+        ) {
+          subcategoryRefs.current[`${selectedCategory}-${selectedSubcategory}`].scrollIntoView({ behavior: "smooth" });
+        } else {
+          categoryRefs.current[selectedCategory].scrollIntoView({ behavior: "smooth" });
+        }
       }, 0);
     }
-  }, [selectedCategory, filteredCategories]);
+  }, [selectedCategory, selectedSubcategory, filteredCategories]);
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -123,7 +183,7 @@ function Shop() {
       <form onSubmit={handleSearch} style={{ marginBottom: "1.5rem" }}>
         <input
           type="text"
-          placeholder="Search by name, price, description, or category..."
+          placeholder="Search by name, price, description, category, or subcategory..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           style={{ padding: "0.5rem", width: "300px" }}
@@ -146,7 +206,7 @@ function Shop() {
             marginTop: "2rem",
             border: selectedCategory === category ? "2px solid #007bff" : "none",
             borderRadius: "8px",
-            padding: selectedCategory === category ? "1rem" : "0"
+            padding: selectedCategory === category ? "1rem" : "0",
           }}
         >
           <h3 style={{ textTransform: "capitalize" }}>
@@ -155,28 +215,47 @@ function Shop() {
               <span style={{ color: "#007bff", marginLeft: "0.5rem" }}>(Selected)</span>
             )}
           </h3>
-          <div className="item-grid">
-            {filteredGroupedItems[category].map(item => (
-              <div
-                key={item.id}
-                className="item-card"
-                onClick={() => navigate(`/item/${item.id}`)}
-                style={{ cursor: "pointer" }}
-              >
-                <img src={item.image} alt={item.name} />
-                <h4>{item.name}</h4>
-                <p>KSH {item.price}</p>
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    addToCart(item);
-                  }}
-                >
-                  Add to Cart
-                </button>
+          {Object.keys(filteredGroupedItems[category]).map(subcategory => (
+            <div
+              key={`${category}-${subcategory}`}
+              ref={el => (subcategoryRefs.current[`${category}-${subcategory}`] = el)}
+              id={`${category.toLowerCase().replace(/\s+/g, "-")}-${subcategory.toLowerCase().replace(/\s+/g, "-")}`}
+              style={{
+                marginTop: "1rem",
+                paddingLeft: "1rem",
+                borderLeft: selectedSubcategory === subcategory ? "4px solid #007bff" : "none",
+              }}
+            >
+              <h4 style={{ textTransform: "capitalize", marginBottom: "0.5rem" }}>
+                {subcategory}
+                {selectedSubcategory === subcategory && (
+                  <span style={{ color: "#007bff", marginLeft: "0.5rem" }}>(Selected)</span>
+                )}
+              </h4>
+              <div className="item-grid">
+                {filteredGroupedItems[category][subcategory].map(item => (
+                  <div
+                    key={item.id}
+                    className="item-card"
+                    onClick={() => navigate(`/item/${item.id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <img src={item.image} alt={item.name} />
+                    <h4>{item.name}</h4>
+                    <p>KSH {item.price}</p>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        addToCart(item);
+                      }}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       ))}
     </div>

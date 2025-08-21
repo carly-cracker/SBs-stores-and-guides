@@ -15,7 +15,7 @@ const auth = getAuth();
 const db = getFirestore();
 
 const cloudName = "dir0qfbpu"; // Your Cloudinary cloud name
-const uploadPreset = "dir0qfbpu"; // Your unsigned upload preset
+const uploadPreset = "dir0qfbpu"; // Replace with your actual unsigned upload preset
 
 function AddItem() {
   const [items, setItems] = useState([]);
@@ -23,6 +23,7 @@ function AddItem() {
     name: "",
     price: "",
     category: "",
+    subcategory: "",
     image: "",
     description: "",
   });
@@ -31,6 +32,18 @@ function AddItem() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [isNewCategory, setIsNewCategory] = useState(false);
+  const [isNewSubcategory, setIsNewSubcategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
+  const [customSubcategory, setCustomSubcategory] = useState("");
+
+  // Predefined categories and subcategories
+  const categoryOptions = {
+    Electronics: ["Phones", "Laptops", "Accessories", "General"],
+    Clothing: ["Shirts", "Pants", "Shoes", "General"],
+    Furniture: ["Chairs", "Tables", "Beds", "General"],
+    Uncategorized: ["General"],
+  };
 
   // Fetch items on mount
   useEffect(() => {
@@ -52,7 +65,36 @@ function AddItem() {
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "category") {
+      if (value === "new") {
+        setIsNewCategory(true);
+        setForm({ ...form, category: "", subcategory: "" });
+        setCustomCategory("");
+      } else {
+        setIsNewCategory(false);
+        setForm({ ...form, category: value, subcategory: "" });
+        setCustomCategory(value);
+      }
+    } else if (name === "subcategory") {
+      if (value === "new") {
+        setIsNewSubcategory(true);
+        setForm({ ...form, subcategory: "" });
+        setCustomSubcategory("");
+      } else {
+        setIsNewSubcategory(false);
+        setForm({ ...form, subcategory: value });
+        setCustomSubcategory(value);
+      }
+    } else if (name === "customCategory") {
+      setCustomCategory(value);
+      setForm({ ...form, category: value });
+    } else if (name === "customSubcategory") {
+      setCustomSubcategory(value);
+      setForm({ ...form, subcategory: value });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
     setError("");
     setMessage("");
   };
@@ -71,23 +113,23 @@ function AddItem() {
         body: formData,
       });
       const data = await res.json();
-      if (data.secure_url) {
-        setForm((prev) => ({ ...prev, image: data.secure_url })); // Store URL in form.image
+      console.log("Cloudinary response:", data); // For debugging
+      if (res.ok && data.secure_url) {
+        setForm((prev) => ({ ...prev, image: data.secure_url }));
         setMessage("Image uploaded successfully!");
       } else {
-        setError("Image upload failed: No secure URL returned.");
+        setError(`Image upload failed: ${data.error?.message || "Unknown error"}`);
       }
       setUploading(false);
     } catch (err) {
-      setError("Image upload failed.");
+      setError(`Image upload failed: ${err.message}`);
       setUploading(false);
     }
   };
 
   // Handle file input change or drop
   const handleFileChange = (e) => {
-    const file =
-      e.target?.files?.[0] || e.dataTransfer?.files?.[0];
+    const file = e.target?.files?.[0] || e.dataTransfer?.files?.[0];
     if (file) {
       if (file.type.startsWith("image/")) {
         handleFileUpload(file);
@@ -108,28 +150,32 @@ function AddItem() {
       return;
     }
     try {
+      const itemData = {
+        ...form,
+        price: Number(form.price),
+        subcategory: form.subcategory || "", // Ensure subcategory is saved
+      };
       if (editingId) {
         // Update existing item
-        await updateDoc(doc(db, "items", editingId), {
-          ...form,
-          price: Number(form.price),
-        });
+        await updateDoc(doc(db, "items", editingId), itemData);
         setMessage("Item updated successfully!");
       } else {
         // Add new item
-        await addDoc(collection(db, "items"), {
-          ...form,
-          price: Number(form.price),
-        });
+        await addDoc(collection(db, "items"), itemData);
         setMessage("Item added successfully!");
       }
       setForm({
         name: "",
         price: "",
         category: "",
+        subcategory: "",
         image: "",
         description: "",
       });
+      setIsNewCategory(false);
+      setIsNewSubcategory(false);
+      setCustomCategory("");
+      setCustomSubcategory("");
       setEditingId(null);
       fetchItems();
     } catch (err) {
@@ -138,13 +184,21 @@ function AddItem() {
   };
 
   const handleEdit = (item) => {
+    const isCustomCategory = !Object.keys(categoryOptions).includes(item.category);
+    const isCustomSubcategory = item.category && item.subcategory && !categoryOptions[item.category]?.includes(item.subcategory);
+    
     setForm({
-      name: item.name,
-      price: item.price,
-      category: item.category,
-      image: item.image,
+      name: item.name || "",
+      price: item.price || "",
+      category: item.category || "",
+      subcategory: item.subcategory || "",
+      image: item.image || "",
       description: item.description || "",
     });
+    setIsNewCategory(isCustomCategory);
+    setIsNewSubcategory(isCustomSubcategory);
+    setCustomCategory(isCustomCategory ? item.category : "");
+    setCustomSubcategory(isCustomSubcategory ? item.subcategory : "");
     setEditingId(item.id);
     setError("");
     setMessage("");
@@ -166,9 +220,14 @@ function AddItem() {
       name: "",
       price: "",
       category: "",
+      subcategory: "",
       image: "",
       description: "",
     });
+    setIsNewCategory(false);
+    setIsNewSubcategory(false);
+    setCustomCategory("");
+    setCustomSubcategory("");
     setEditingId(null);
     setError("");
     setMessage("");
@@ -192,6 +251,8 @@ function AddItem() {
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       (item.category &&
         item.category.toLowerCase().includes(search.toLowerCase())) ||
+      (item.subcategory &&
+        item.subcategory.toLowerCase().includes(search.toLowerCase())) ||
       (item.description &&
         item.description.toLowerCase().includes(search.toLowerCase()))
   );
@@ -211,12 +272,55 @@ function AddItem() {
           required
         />
         <label>Category*</label>
-        <input
+        <select
           name="category"
-          value={form.category}
+          value={isNewCategory ? "new" : form.category}
           onChange={handleChange}
           required
-        />
+        >
+          <option value="">Select a category</option>
+          {Object.keys(categoryOptions).map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+          <option value="new">Add New Category</option>
+        </select>
+        {isNewCategory && (
+          <input
+            name="customCategory"
+            value={customCategory}
+            onChange={handleChange}
+            placeholder="Enter new category"
+            style={{ marginTop: "0.5rem" }}
+            required
+          />
+        )}
+        <label>Subcategory</label>
+        <select
+          name="subcategory"
+          value={isNewSubcategory ? "new" : form.subcategory}
+          onChange={handleChange}
+          disabled={!form.category && !isNewCategory}
+        >
+          <option value="">Select a subcategory (optional)</option>
+          {form.category &&
+            categoryOptions[form.category]?.map((subcat) => (
+              <option key={subcat} value={subcat}>
+                {subcat}
+              </option>
+            ))}
+          <option value="new">Add New Subcategory</option>
+        </select>
+        {isNewSubcategory && (
+          <input
+            name="customSubcategory"
+            value={customSubcategory}
+            onChange={handleChange}
+            placeholder="Enter new subcategory"
+            style={{ marginTop: "0.5rem" }}
+          />
+        )}
         <label>Image*</label>
         <div
           onDragOver={handleDragOver}
@@ -300,7 +404,7 @@ function AddItem() {
       <h3 style={{ marginTop: "2rem" }}>All Items</h3>
       <input
         type="text"
-        placeholder="Search items by name, category, or description..."
+        placeholder="Search items by name, category, subcategory, or description..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="search-input"
@@ -325,6 +429,7 @@ function AddItem() {
               <div>KSH {item.price}</div>
               <div style={{ fontSize: "0.95em", color: "#666" }}>
                 {item.category}
+                {item.subcategory && ` > ${item.subcategory}`}
               </div>
               {item.description && (
                 <div style={{ fontSize: "0.93em", color: "#888" }}>
