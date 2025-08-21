@@ -1,4 +1,3 @@
-// src/components/AddItem.jsx
 import React, { useState, useEffect } from "react";
 import { getAuth } from "firebase/auth";
 import {
@@ -11,8 +10,12 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 
+// Initialize Firebase
 const auth = getAuth();
 const db = getFirestore();
+
+const cloudName = "dir0qfbpu"; // Your Cloudinary cloud name
+const uploadPreset = "dir0qfbpu"; // Your unsigned upload preset
 
 function AddItem() {
   const [items, setItems] = useState([]);
@@ -27,6 +30,7 @@ function AddItem() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   // Fetch items on mount
   useEffect(() => {
@@ -51,6 +55,48 @@ function AddItem() {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
     setMessage("");
+  };
+
+  // Handle Cloudinary file upload
+  const handleFileUpload = async (file) => {
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+
+    try {
+      setUploading(true);
+      const res = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setForm((prev) => ({ ...prev, image: data.secure_url })); // Store URL in form.image
+        setMessage("Image uploaded successfully!");
+      } else {
+        setError("Image upload failed: No secure URL returned.");
+      }
+      setUploading(false);
+    } catch (err) {
+      setError("Image upload failed.");
+      setUploading(false);
+    }
+  };
+
+  // Handle file input change or drop
+  const handleFileChange = (e) => {
+    const file =
+      e.target?.files?.[0] || e.dataTransfer?.files?.[0];
+    if (file) {
+      if (file.type.startsWith("image/")) {
+        handleFileUpload(file);
+      } else {
+        setError("Please upload a valid image file.");
+      }
+    } else {
+      setError("No file selected.");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -128,11 +174,26 @@ function AddItem() {
     setMessage("");
   };
 
+  // Handle drag-and-drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleFileChange(e);
+  };
+
   // Filter items based on search
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    (item.category && item.category.toLowerCase().includes(search.toLowerCase())) ||
-    (item.description && item.description.toLowerCase().includes(search.toLowerCase()))
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      (item.category &&
+        item.category.toLowerCase().includes(search.toLowerCase())) ||
+      (item.description &&
+        item.description.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -140,12 +201,7 @@ function AddItem() {
       <h2>{editingId ? "Edit Item" : "Add Item"}</h2>
       <form className="auth-form" onSubmit={handleSubmit} autoComplete="off">
         <label>Name*</label>
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
+        <input name="name" value={form.name} onChange={handleChange} required />
         <label>Price (KSH)*</label>
         <input
           name="price"
@@ -161,13 +217,59 @@ function AddItem() {
           onChange={handleChange}
           required
         />
-        <label>Image URL*</label>
-        <input
-          name="image"
-          value={form.image}
-          onChange={handleChange}
-          required
-        />
+        <label>Image*</label>
+        <div
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          style={{
+            border: "2px dashed #ccc",
+            padding: "1rem",
+            textAlign: "center",
+            marginBottom: "0.5rem",
+            background: uploading ? "#f0f0f0" : "#fff",
+          }}
+        >
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+            id="file-input"
+            disabled={uploading}
+          />
+          <label htmlFor="file-input">
+            <button
+              type="button"
+              onClick={() => document.getElementById("file-input").click()}
+              disabled={uploading}
+              style={{
+                background: uploading ? "#ccc" : "#007bff",
+                color: "#fff",
+                padding: "0.5rem 1rem",
+                border: "none",
+                borderRadius: "4px",
+                cursor: uploading ? "not-allowed" : "pointer",
+              }}
+            >
+              {uploading ? "Uploading..." : "Choose Image"}
+            </button>
+          </label>
+          <p>or drag and drop an image here</p>
+        </div>
+        {form.image && (
+          <div>
+            <img
+              src={form.image}
+              alt="Preview"
+              style={{
+                width: "100px",
+                height: "100px",
+                objectFit: "cover",
+                marginBottom: "0.5rem",
+              }}
+            />
+          </div>
+        )}
         <label>Description</label>
         <textarea
           name="description"
@@ -175,7 +277,9 @@ function AddItem() {
           onChange={handleChange}
           rows={3}
         />
-        <button type="submit">{editingId ? "Update Item" : "Add Item"}</button>
+        <button type="submit" disabled={uploading}>
+          {editingId ? "Update Item" : "Add Item"}
+        </button>
         {editingId && (
           <button
             type="button"
