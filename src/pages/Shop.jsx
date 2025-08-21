@@ -10,7 +10,7 @@ function Shop() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768); // Hidden on small screens
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768); // Open by default on large screens
   const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
   const { addToCart } = useCart();
   const navigate = useNavigate();
@@ -25,7 +25,8 @@ function Shop() {
     const handleResize = () => {
       const smallScreen = window.innerWidth < 768;
       setIsSmallScreen(smallScreen);
-      setIsSidebarOpen(!smallScreen); // Open by default on large screens
+      // Keep sidebar open on large screens, closed on small screens by default
+      setIsSidebarOpen(!smallScreen);
     };
 
     window.addEventListener("resize", handleResize);
@@ -253,24 +254,22 @@ function Shop() {
               Go
             </button>
           </form>
-          {isSmallScreen && (
-            <button
-              onClick={toggleSidebar}
-              style={{
-                padding: "0.5rem 1rem",
-                background: "#007bff",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                margin: 0,
-                lineHeight: "1.5",
-                width: "fit-content",
-              }}
-            >
-              Categories
-            </button>
-          )}
+          <button
+            onClick={toggleSidebar}
+            style={{
+              padding: "0.5rem 1rem",
+              background: "#007bff",
+              color: "#fff",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              margin: 0,
+              lineHeight: "1.5",
+              width: "fit-content",
+            }}
+          >
+            {isSidebarOpen ? "Hide Categories" : "Show Categories"}
+          </button>
         </div>
 
         {filteredCategories.length === 0 && (

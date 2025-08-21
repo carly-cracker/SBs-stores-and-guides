@@ -33,7 +33,7 @@ function Sidebar({ categories, groupedItems, categoryRefs, subcategoryRefs, isSi
   return (
     <div
       style={{
-        width: isSmallScreen ? "100%" : "250px",
+        width: isSmallScreen ? "100%" : "150px",
         minHeight: isSmallScreen ? "auto" : "100vh",
         background: "#f8f9fa",
         padding: "1rem",
