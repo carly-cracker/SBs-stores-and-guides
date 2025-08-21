@@ -10,7 +10,8 @@ function Shop() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Manage sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768); // Hidden on small screens
+  const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,6 +19,18 @@ function Shop() {
   // Refs for each category and subcategory section
   const categoryRefs = useRef({});
   const subcategoryRefs = useRef({});
+
+  // Handle window resize to update isSmallScreen
+  useEffect(() => {
+    const handleResize = () => {
+      const smallScreen = window.innerWidth < 768;
+      setIsSmallScreen(smallScreen);
+      setIsSidebarOpen(!smallScreen); // Open by default on large screens
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -167,10 +180,12 @@ function Shop() {
       });
       setSelectedCategory(matchedCategory);
       setSelectedSubcategory(matchedSubcategory);
+      if (isSmallScreen) setIsSidebarOpen(false); // Hide sidebar after search on small screens
     } else if (matchedCategory && categoryRefs.current[matchedCategory]) {
       categoryRefs.current[matchedCategory].scrollIntoView({ behavior: "smooth" });
       setSelectedCategory(matchedCategory);
       setSelectedSubcategory("");
+      if (isSmallScreen) setIsSidebarOpen(false); // Hide sidebar after search on small screens
     } else {
       setSelectedCategory("");
       setSelectedSubcategory("");
@@ -201,7 +216,7 @@ function Shop() {
   }, [selectedCategory, selectedSubcategory, filteredCategories]);
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ position: "relative" }}>
       <Sidebar
         categories={categories}
         groupedItems={groupedItems}
@@ -209,33 +224,54 @@ function Shop() {
         subcategoryRefs={subcategoryRefs}
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
+        isSmallScreen={isSmallScreen}
       />
       <div
         style={{
-          marginLeft: isSidebarOpen ? "160px" : "30px", // Dynamic margin
-          padding: "2rem",
+          marginLeft: isSmallScreen ? 0 : isSidebarOpen ? "260px" : "60px",
+          padding: "1rem",
           width: "100%",
           transition: "margin-left 0.3s",
         }}
       >
         <h2>Shop Our Collection</h2>
 
-        {/* Search Filter */}
-        <form onSubmit={handleSearch} style={{ marginBottom: "1.5rem" }}>
-          <input
-            type="text"
-            placeholder="Search by name, price, description, category, or subcategory..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ padding: "0.5rem", width: "300px" }}
-          />
-          <button
-            type="submit"
-            style={{ marginLeft: "0.5rem", padding: "0.5rem 1rem" }}
-          >
-            Go
-          </button>
-        </form>
+        {/* Search Filter and Categories Button */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <form onSubmit={handleSearch} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <input
+              type="text"
+              placeholder="Search by name, price, description, category, or subcategory..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ padding: "0.5rem", width: "300px" }}
+            />
+            <button
+              type="submit"
+              style={{ padding: "0.5rem 1rem" }}
+            >
+              Go
+            </button>
+          </form>
+          {isSmallScreen && (
+            <button
+              onClick={toggleSidebar}
+              style={{
+                padding: "0.5rem 1rem",
+                background: "#007bff",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                margin: 0,
+                lineHeight: "1.5",
+                width: "fit-content",
+              }}
+            >
+              Categories
+            </button>
+          )}
+        </div>
 
         {filteredCategories.length === 0 && (
           <p>No items found matching your search.</p>
