@@ -1,0 +1,80 @@
+// src/hooks/useCategoryOptions.js
+import { useEffect, useMemo, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
+
+export default function useCategoryOptions({ db, staticOptions, itemsCollection = "items" }) {
+  const [dynamicOptions, setDynamicOptions] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchDynamicOptions() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const snap = await getDocs(collection(db, itemsCollection));
+        const map = new Map();
+
+        snap.forEach((docSnap) => {
+          const data = docSnap.data() || {};
+          const rawCategory = data.category ?? data.Category ?? "Uncategorized";
+          const category = typeof rawCategory === "string" && rawCategory.trim()
+            ? rawCategory.trim()
+            : "Uncategorized";
+
+          const rawSub = data.subcategory ?? data.Subcategory ?? data.subCategory ?? data.SubCategory ?? "General";
+          const subcategory = typeof rawSub === "string" && rawSub.trim()
+            ? rawSub.trim()
+            : "General";
+
+          if (!map.has(category)) {
+            map.set(category, new Set());
+          }
+          map.get(category).add(subcategory);
+        });
+
+        const dynamic = {};
+        for (const [cat, subsSet] of map.entries()) {
+          const arr = Array.from(subsSet);
+          if (arr.length === 0) arr.push("General");
+          dynamic[cat] = arr.sort((a, b) => a.localeCompare(b));
+        }
+
+        if (!cancelled) setDynamicOptions(dynamic);
+      } catch (err) {
+        if (!cancelled) setError(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchDynamicOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, [db, itemsCollection]);
+
+  const merged = useMemo(() => {
+    const result = { ...(staticOptions || {}) };
+
+    for (const [dynCat, dynSubs] of Object.entries(dynamicOptions)) {
+      const staticSubs = new Set(result[dynCat] || []);
+      for (const s of dynSubs) staticSubs.add(s);
+      staticSubs.add("General");
+      result[dynCat] = Array.from(staticSubs).sort((a, b) => a.localeCompare(b));
+    }
+
+    for (const [cat, subs] of Object.entries(result)) {
+      const subsSet = new Set(subs);
+      subsSet.add("General");
+      result[cat] = Array.from(subsSet).sort((a, b) => a.localeCompare(b));
+    }
+
+    return result;
+  }, [staticOptions, dynamicOptions]);
+
+  return { options: merged, loading, error };
+}

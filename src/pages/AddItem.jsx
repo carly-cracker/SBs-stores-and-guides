@@ -10,6 +10,9 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 
+import useCategoryOptions from "../hooks/useCategoryOptions";
+
+
 // Initialize Firebase
 const auth = getAuth();
 const db = getFirestore();
@@ -38,17 +41,25 @@ function AddItem() {
   const [customSubcategory, setCustomSubcategory] = useState("");
 
   // Predefined categories and subcategories
-  const categoryOptions = {
+  const staticOptions = {
     Electronics: ["Phones", "Laptops", "Accessories", "General"],
     Clothing: ["Shirts", "Pants", "Shoes", "General"],
     Furniture: ["Chairs", "Tables", "Beds", "General"],
     Uncategorized: ["General"],
   };
 
+  const { options: categoryOptions, loading: catLoading } = useCategoryOptions({
+    db,
+    staticOptions,
+    itemsCollection: "items",
+  });
+
+
   // Fetch items on mount
   useEffect(() => {
     fetchItems();
   }, []);
+
 
   const fetchItems = async () => {
     try {
